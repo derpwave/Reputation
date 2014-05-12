@@ -34,7 +34,7 @@ public class Reputation extends JavaPlugin {
     
     //	misc
     
-    public Player getplayerobj(String playername) {  //get object Player from player name; returns null if player not found 
+    public Player getplayerobj(String playername) {  //get object Player from player name; returns null if player not found (returned type is Player) 
     	for (Player ply : Bukkit.getServer().getOnlinePlayers()) {
     		if (ply.getName().equalsIgnoreCase(playername)) {
     			return ply;
