@@ -1,5 +1,7 @@
 package com.gmail.derpwave;
 
+import java.util.HashMap;
+
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -16,6 +18,10 @@ public class Reputation extends JavaPlugin {
 
 	}
 	
+	//CONSTRUCTORS
+	
+	HashMap<String, Integer> repmap = new HashMap<String, Integer>();
+	
 	//FUNCTIONS
 	
 	//	defaults
@@ -26,6 +32,20 @@ public class Reputation extends JavaPlugin {
      
     public void onDisable(){ 
      
+    }
+    
+    //	maprep changes
+    
+    public void setmaprep(String player, Integer value) {
+    	repmap.put(player, value);
+    }
+    
+    public Integer getmaprep(String player) {
+    	return repmap.get(player);
+    }
+    
+    public void altmaprep(String player, Integer value) {
+    	setmaprep(player, getmaprep(player)+value);
     }
     
     //	metarep changes
@@ -43,8 +63,13 @@ public class Reputation extends JavaPlugin {
     	return null;
     }
     
-    public static boolean ifnumber(String input) {
-        return input.matches("[+-]?\\d*(\\.\\d+)?");
+    public static boolean ifnumber(String input, Boolean hasdecs) {  //if hasdecs = true, number can be a decimal. if hasdecs = false, number can only be integer
+    	if (hasdecs = true) {
+    		return input.matches("[+-]?\\d*(\\.\\d+)?");
+    	}
+    	else {
+    		return input.matches("[+-]?\\d+");
+    	}
     }
     
     //LISTENER
