@@ -1,7 +1,9 @@
 package com.gmail.derpwave;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -26,9 +28,21 @@ public class Reputation extends JavaPlugin {
      
     }
     
+    //	metarep changes
+    
+    
+    
     //	misc
     
-    public static boolean isNumeric(String input) {
+    public Player getplayerobj(String playername) {
+    	for (Player ply : Bukkit.getServer().getOnlinePlayers()) {
+    		if (ply.getName().equalsIgnoreCase(playername)) {
+    			return sender;
+    		}
+    	}
+    }
+    
+    public static boolean ifnumber(String input) {
         return input.matches("[+-]?\\d*(\\.\\d+)?");
     }
     
