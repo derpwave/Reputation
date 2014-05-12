@@ -37,7 +37,9 @@ public class Reputation extends JavaPlugin {
     public Player getplayerobj(String playername) {
     	for (Player ply : Bukkit.getServer().getOnlinePlayers()) {
     		if (ply.getName().equalsIgnoreCase(playername)) {
+
     			return ply;
+
     		}
     	}
     }
