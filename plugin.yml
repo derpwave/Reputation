@@ -1,0 +1,11 @@
+name: Reputation
+main: com.gmail.derpwave.reputation
+version: 0.2
+
+
+commands:
+   test:
+      description: test command 
+      usage: /test
+      permission: test.rn
+      permission-message: You don't have permission to use this command.
