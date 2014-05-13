@@ -15,3 +15,16 @@ commands:
       usage: /getmaprep [player]
       permission: getmaprep.rn
       permission-message: You don't have permission to use this command.
+      
+      
+   setmaprep:
+      description: set player reputation in the hashmap  
+      usage: /setmaprep [player] [value]
+      permission: setmaprep.rn
+      permission-message: You don't have permission to use this command.
+      
+   altmaprep:
+      description: alter player reputation in the hashmap  
+      usage: /altmaprep [player] [value]
+      permission: altmaprep.rn
+      permission-message: You don't have permission to use this command.

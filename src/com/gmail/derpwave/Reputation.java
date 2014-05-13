@@ -1,6 +1,13 @@
 package com.gmail.derpwave;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.HashMap;
+import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -15,24 +22,64 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class Reputation extends JavaPlugin {
 
 	public static void main(String[] args) {
-
+		
 	}
 	
 	//CONSTRUCTORS
 	
-	HashMap<String, Integer> repmap = new HashMap<String, Integer>();
+	HashMap<String, Integer> repmap  = new HashMap<String, Integer>();
 	
 	//FUNCTIONS
 	
 	//	defaults
 	
     public void onEnable(){ 
-        
+    	Bukkit.getServer().getLogger().log(Level.INFO, "Thanks for creating me. I'll keep an eye on your stuff. Love, Gary.");
+    	repmap.clear(); //make sure the hashmap is empty
     }
      
     public void onDisable(){ 
-     
+    	
     }
+    
+    //handling serialization of repmap (i.e. streaming repmap contents into a file to avoid data loss on server shutdown/crash)
+    
+	public void saverepmap() {
+		try
+		{
+			FileOutputStream fileOut = new FileOutputStream("/repfiles/filedrepmap.ser");
+			ObjectOutputStream out = new ObjectOutputStream(fileOut);
+			out.writeObject(repmap);
+			out.close();
+			fileOut.close();
+			Bukkit.getServer().getLogger().log(Level.INFO, "repmap has been saved to /repfiles/filedrepmap.ser");
+		}
+    	catch(IOException i){
+    		i.printStackTrace();
+        }
+    }
+	
+	
+	public void readrepmap() {
+		try
+	      {
+	         FileInputStream fileIn = new FileInputStream("/repfiles/filedrepmap.ser");
+	         ObjectInputStream in = new ObjectInputStream(fileIn);
+	         try {
+				repmap = (HashMap) in.readObject();
+			} catch (ClassNotFoundException e) {
+				Bukkit.getServer().getLogger().log(Level.INFO, "repmap could not be read from file");
+				e.printStackTrace();
+			}
+	         in.close();
+	         fileIn.close();
+	      }
+		catch(IOException i) { 
+			Bukkit.getServer().getLogger().log(Level.INFO, "repmap could not be read from file");
+			i.printStackTrace();
+			return;
+			}
+	    }
     
     //	maprep changes
     
@@ -93,73 +140,60 @@ public class Reputation extends JavaPlugin {
     
     @EventHandler
     public void onLogin(PlayerLoginEvent event) {
-         event.getPlayer().sendMessage("Thanks for creating me. I'll keep an eye on your stuff. Love, Gary.");
+         event.getPlayer().sendMessage("");
     }
     
     //	for commands
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args){
-    	if(cmd.getName().equalsIgnoreCase("getmaprep")){ 
+    	if(cmd.getName().equalsIgnoreCase("getmaprep")){  //command to get a player's reputation from the hashmap
     		if (args.length != 1) {
     			sender.sendMessage("use like '/getmaprep [player]'");
     			return true;
     		}
-    		if (checkmaprep(args[0])){
-    			sender.sendMessage("Player "+args[0]+" has "+getmaprep(args[0])+" reputation.");
-    			return true;
-    		}
-    		else
-    		{
+    		if (checkmaprep(args[0]) == false){
     			sender.sendMessage("Player '"+args[0]+"' doesn't exist.");
     			return true;
     		}
+			sender.sendMessage("Player "+args[0]+" has "+getmaprep(args[0])+" reputation.");
+			return true;
     	} 
     	
-    	if(cmd.getName().equalsIgnoreCase("setmaprep")){ //command to set a player's reputation in the hashmap
-    		if (args.length == 2) {  //checks if 2 arguments (player, value) have been given
-    			if (ifnumber(args[1], false) == true){  //checks if 2nd argument (reputation) is a valid int
-    				if (ifplayer(args[0])) {  //checks if user exists on the server
-    					setmaprep(args[0], Integer.parseInt(args[1]));
-    					sender.sendMessage(args[0]+"'s reputation has been set to "+Integer.parseInt(args[1]));
-    				}
-    				else {
-    					sender.sendMessage("Player '"+args[0]+"doesn't exist");
-    					return true;
-    				}
-    			}
-    			else {
-    				sender.sendMessage("Reputation needs to be a numeric value");
-    				return true;
-    			}
-    		}
-    		else { 
-    			sender.sendMessage("use like '/setmaprep [player] [value]'");
-    			return true;
-    		}
-    	} 
+		if(cmd.getName().equalsIgnoreCase("setmaprep")){ //command to set a player's reputation in the hashmap
+			if (args.length != 2) {  //checks if 2 arguments (player, value) have been given
+				sender.sendMessage("use like '/setmaprep [player] [value]'");
+				return true;
+			}
+			if (ifplayer(args[0]) == false) {  //checks if player exists on the server
+				sender.sendMessage("Player '"+args[0]+"doesn't exist");
+				return true;
+			}
+			if (ifnumber(args[1], false) == false){  //checks if 2nd argument (reputation) is a valid int
+				sender.sendMessage("Reputation needs to be a numeric value");
+				return true;
+			}
+			setmaprep(args[0], Integer.parseInt(args[1]));
+			sender.sendMessage(args[0]+"'s reputation has been set to "+Integer.parseInt(args[1]));
+			return true;
+		}
     	
-    	if(cmd.getName().equalsIgnoreCase("altmaprep")){ //command to alter a player's reputation in the hashmap
-    		if (args.length == 2) {  //checks if 2 arguments (player, value) have been given
-    			if (ifnumber(args[1], false) == true){  //checks if 2nd argument (reputation) is a valid int
-    				if (ifplayer(args[0])) {  //checks if user exists on the server
-    					setmaprep(args[0], Integer.parseInt(args[1]));
-    					sender.sendMessage(args[0]+"'s reputation has been changed by "+args[1]+ " to "+(getmaprep(args[0])+Integer.parseInt(args[1])));
-    				}
-    				else {
-    					sender.sendMessage("Player '"+args[0]+"doesn't exist");
-    					return true;
-    				}
-    			}
-    			else {
-    				sender.sendMessage("Reputation needs to be a numeric value");
-    				return true;
-    			}
-    		}
-    		else { 
-    			sender.sendMessage("use like '/setmaprep [player] [value]'");
-    			return true;
-    		}
-    	} 
+		if(cmd.getName().equalsIgnoreCase("altmaprep")){ //command to alter a player's reputation in the hashmap
+			if (args.length != 2) {  //checks if 2 arguments (player, value) have been given
+				sender.sendMessage("use like '/altmaprep [player] [value]'");
+				return true;
+			}
+			if (ifplayer(args[0]) == false) {  //checks if player exists on the server
+				sender.sendMessage("Player '"+args[0]+"doesn't exist");
+				return true;
+			}
+			if (ifnumber(args[1], false) == false){  //checks if 2nd argument (reputation) is a valid int
+				sender.sendMessage("Reputation needs to be a numeric value");
+				return true;
+			}
+			altmaprep(args[0], Integer.parseInt(args[1]));
+			sender.sendMessage(args[0]+"'s reputation has been changed by "+args[1]+" to "+Integer.parseInt(args[1]));
+			return true;
+		}
     	
     	//template for new commands
     	/* 
