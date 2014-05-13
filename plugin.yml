@@ -9,3 +9,9 @@ commands:
       usage: /test
       permission: test.rn
       permission-message: You don't have permission to use this command.
+      
+   getmaprep:
+      description: get player reputation from the hashmap  
+      usage: /getmaprep [player]
+      permission: getmaprep.rn
+      permission-message: You don't have permission to use this command.
