@@ -1,11 +1,9 @@
 package com.gmail.derpwave;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.logging.Level;
 
@@ -36,6 +34,9 @@ public class Reputation extends JavaPlugin {
     public void onEnable(){ 
     	Bukkit.getServer().getLogger().log(Level.INFO, "Thanks for creating me. I'll keep an eye on your stuff. Love, Gary.");
     	repmap.clear(); //make sure the hashmap is empty
+    	repmap.put("Nixodas", 3);
+    	repmap.put("Itanshir", 12);
+    	repmap.put("Penisfisch", 34245);
     }
      
     public void onDisable(){ 
@@ -45,29 +46,45 @@ public class Reputation extends JavaPlugin {
     //handling serialization of repmap (i.e. streaming repmap contents into a file to avoid data loss on server shutdown/crash)
     
 	public void saverepmap() {
-		try
-		{
-			FileOutputStream fileOut = new FileOutputStream("/repfiles/filedrepmap.ser");
-			ObjectOutputStream out = new ObjectOutputStream(fileOut);
-			out.writeObject(repmap);
-			out.close();
-			fileOut.close();
-			Bukkit.getServer().getLogger().log(Level.INFO, "repmap has been saved to /repfiles/filedrepmap.ser");
+		
+		try {
+			
+			File dataFolder = getDataFolder();
+			if(!dataFolder.exists()) {
+				dataFolder.mkdir();
+			}
+			File saveTo = new File(getDataFolder(), "data.txt");
+			if (!saveTo.exists()){
+				saveTo.createNewFile();
+			}
+			FileWriter fw = new FileWriter(saveTo, true);
+			PrintWriter pw = new PrintWriter(fw);
+			for (String key : repmap.keySet()) {  //iterate through all repmap entries
+				pw.println(key+";"+getmaprep(key));  //write all repmap entries into the 
+			}
+			pw.flush();
+			pw.close();
 		}
-    	catch(IOException i){
-    		i.printStackTrace();
-        }
-    }
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 	
 	
+	public void asdasd() {
+		
+	}
+	
+	/*
 	public void readrepmap() {
 		try
-	      {
-	         FileInputStream fileIn = new FileInputStream("/repfiles/filedrepmap.ser");
-	         ObjectInputStream in = new ObjectInputStream(fileIn);
-	         try {
+			{
+				FileInputStream fileIn = new FileInputStream("filedrepmap.ser");
+				ObjectInputStream in = new ObjectInputStream(fileIn);
+				try {
 				repmap = (HashMap) in.readObject();
-			} catch (ClassNotFoundException e) {
+			} 
+			catch (ClassNotFoundException e) {
 				Bukkit.getServer().getLogger().log(Level.INFO, "repmap could not be read from file");
 				e.printStackTrace();
 			}
@@ -80,7 +97,7 @@ public class Reputation extends JavaPlugin {
 			return;
 			}
 	    }
-    
+    */
     //	maprep changes
     
     public void setmaprep(String player, Integer value) {  //sets a rep value in the hashmap; creates entry if key (player name) doesn't exist yet, replaces otherwise
@@ -192,6 +209,17 @@ public class Reputation extends JavaPlugin {
 			}
 			altmaprep(args[0], Integer.parseInt(args[1]));
 			sender.sendMessage(args[0]+"'s reputation has been changed by "+args[1]+" to "+Integer.parseInt(args[1]));
+			return true;
+		}
+		
+		if(cmd.getName().equalsIgnoreCase("savereps")){
+			saverepmap();
+			sender.sendMessage("herpaderp");
+			return true;
+		}
+		
+		if(cmd.getName().equalsIgnoreCase("readreps")){
+			sender.sendMessage(getDataFolder().getAbsolutePath());
 			return true;
 		}
     	
