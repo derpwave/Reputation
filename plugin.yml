@@ -34,3 +34,15 @@ commands:
       usage: /loadrepmap
       permission: loadrepmap.rn
       permission-message: You don't have permission to use this command.
+      
+   getmetarep:
+      description: request player meta reputation  
+      usage: /getmetarep [player]
+      permission: getmetarep.rn
+      permission-message: You don't have permission to use this command.
+
+   setmetarep:
+      description: set player meta reputation
+      usage: /setmetarep [player] [value]
+      permission: setmetarep.rn
+      permission-message: You don't have permission to use this command.

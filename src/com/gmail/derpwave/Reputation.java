@@ -15,14 +15,17 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.google.common.io.Files;
 
 
 
-public class Reputation extends JavaPlugin {
+public class Reputation extends JavaPlugin implements Listener {
 
 	public static void main(String[] args) {
 		
@@ -44,6 +47,7 @@ public class Reputation extends JavaPlugin {
 	//	defaults
 	
     public void onEnable(){ 
+    	getServer().getPluginManager().registerEvents(this, this);
     	Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Thanks for creating me. I'll keep an eye on your stuff. Love, Gary.");
     	if (!dataloc.exists()) {  //create the plugin's data folder if it doesn't exist (in /plugins, named like plugin)
     		dataloc.mkdir();
@@ -133,7 +137,20 @@ public class Reputation extends JavaPlugin {
     
     //	metarep changes
     
+	public void setmetarep(Player player, Integer value) {
+		player.setMetadata("rep", new FixedMetadataValue(this,value));
+	}
     
+    
+    public Integer getmetarep(Player player) {
+    	  List<MetadataValue> values = player.getMetadata("rep");  
+    	  for (MetadataValue value : values) {
+    		     if (value.getOwningPlugin() == this) {
+    		         return value.asInt();
+    		      }
+    	  }
+    	  return null;
+    	}
     
     //	misc
     
@@ -173,41 +190,50 @@ public class Reputation extends JavaPlugin {
     //	for events
     
     @EventHandler
-    public void onLogin(PlayerLoginEvent event) {
-         event.getPlayer().sendMessage("");
+	public void onLogin(PlayerJoinEvent event) {
+    	if (!checkmaprep(event.getPlayer().getName())) {
+    		Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] No entry found for player in hashmap; creating entry");
+    		setmaprep(event.getPlayer().getName(), 0);
+    		setmetarep(event.getPlayer(), 0);
+    		event.getPlayer().sendMessage("$aIt seems you're new here. Your server reputation is §e0$a.");
+    	}
+    	else {
+    		Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Player found in hashmap; loading to metadata");
+    		setmetarep(event.getPlayer(), getmaprep(event.getPlayer().getName()));  //fetch 
+    		event.getPlayer().sendMessage("$aWelcome back. Your server reputation is §e"+getmaprep(event.getPlayer().getName())+"§f. ");
+    	}
     }
-    
     //	for commands
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args){
     	if(cmd.getName().equalsIgnoreCase("getmaprep")){  //command to get a player's reputation from the hashmap
     		if (args.length != 1) {
-    			sender.sendMessage("use like '/getmaprep [player]'");
+    			sender.sendMessage("$ause like '/getmaprep [player]'");
     			return true;
     		}
     		if (checkmaprep(args[0]) == false){
-    			sender.sendMessage("Player '"+args[0]+"' doesn't exist.");
+    			sender.sendMessage("$aPlayer '$e"+args[0]+"$a' doesn't exist.");
     			return true;
     		}
-			sender.sendMessage("Player "+args[0]+" has "+getmaprep(args[0])+" reputation.");
+			sender.sendMessage("$aPlayer$e "+args[0]+"$a has $e"+getmaprep(args[0])+" $areputation.");
 			return true;
     	} 
     	
 		if(cmd.getName().equalsIgnoreCase("setmaprep")){ //command to set a player's reputation in the hashmap
 			if (args.length != 2) {  //checks if 2 arguments (player, value) have been given
-				sender.sendMessage("use like '/setmaprep [player] [value]'");
+				sender.sendMessage("$ause like '$e/setmaprep [player] [value]$a'");
 				return true;
 			}
 			if (ifplayermapentry(args[0]) == false) {  //checks if player exists on the server
-				sender.sendMessage("Player '"+args[0]+"doesn't exist");
+				sender.sendMessage("$aPlayer '$e"+args[0]+"$a' doesn't exist");
 				return true;
 			}
 			if (ifnumber(args[1], false) == false){  //checks if 2nd argument (reputation) is a valid int
-				sender.sendMessage("Reputation needs to be a numeric value");
+				sender.sendMessage("$aReputation needs to be a numeric value");
 				return true;
 			}
 			setmaprep(args[0], Integer.parseInt(args[1]));
-			sender.sendMessage(args[0]+"'s reputation has been set to "+Integer.parseInt(args[1]));
+			sender.sendMessage("$e"+args[0]+"'s $areputation has been set to $e"+Integer.parseInt(args[1])+"$a.");
 			return true;
 		}
     	
@@ -241,6 +267,15 @@ public class Reputation extends JavaPlugin {
 			return true;
 		}
     	
+    	if(cmd.getName().equalsIgnoreCase("setmetarep")){ 
+    		setmetarep(getplayerobj(args[0]), Integer.parseInt(args[1]));
+    		return true;
+    	} 
+    	
+    	if(cmd.getName().equalsIgnoreCase("getmetarep")){ 
+    		sender.sendMessage("is "+getmetarep(getplayerobj(args[0])));
+    		return true;
+    	} 
     	//template for new commands
     	/* 
     	if(cmd.getName().equalsIgnoreCase("command")){ 
