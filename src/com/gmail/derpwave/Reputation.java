@@ -1,10 +1,13 @@
 package com.gmail.derpwave;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -15,6 +18,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.google.common.io.Files;
+
 
 
 public class Reputation extends JavaPlugin {
@@ -23,81 +28,90 @@ public class Reputation extends JavaPlugin {
 		
 	}
 	
+	//NOTES
+	
+	// Bukkit.getServer().getLogger().log(Level.INFO, "");  //write something in the server log
+	
 	//CONSTRUCTORS
 	
-	HashMap<String, Integer> repmap  = new HashMap<String, Integer>();
+	HashMap<String, Integer> repmap  = new HashMap<String, Integer>();  //hashmap that stores rep values
+	File dataloc = getDataFolder();  //location of plugin data (including repfile)
+	File repfile = new File(dataloc, "rep.txt");  //file that stores rep values
+	
 	
 	//FUNCTIONS
 	
 	//	defaults
 	
     public void onEnable(){ 
-    	Bukkit.getServer().getLogger().log(Level.INFO, "Thanks for creating me. I'll keep an eye on your stuff. Love, Gary.");
-    	repmap.clear(); //make sure the hashmap is empty
-    	repmap.put("Nixodas", 3);
-    	repmap.put("Itanshir", 12);
-    	repmap.put("Penisfisch", 34245);
+    	Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Thanks for creating me. I'll keep an eye on your stuff. Love, Gary.");
+    	if (!dataloc.exists()) {  //create the plugin's data folder if it doesn't exist (in /plugins, named like plugin)
+    		dataloc.mkdir();
+    		Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Plugin data folder doesn't exist; creating... (at "+dataloc.getAbsolutePath()+")");
+    		}  
+    	else {
+    		Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Plugin data folder found at "+dataloc.getAbsolutePath());
+    	}
+    	if (!repfile.exists()) {  //create the rep backup file if it doesn't exist (in /plugins/pluginname)
+    		try {
+    			repfile.createNewFile();
+    			Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Player reputation backup file doesn't exist; creating '"+repfile.getName()+"' at "+dataloc.getAbsolutePath());
+    			} 
+    		catch (IOException e) {
+    			e.printStackTrace();
+    			Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Failed to create reputation backup file '"+repfile.getName()+"' at "+dataloc.getAbsolutePath());
+    			}
+    		}
+    	else {  //if rep backup file does exist, load values to repmap
+    		loadrepmap();
+    		Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Player reputation backup file '"+repfile.getName()+"' found at "+dataloc.getAbsolutePath()+"; loading");
+    	}
     }
      
     public void onDisable(){ 
-    	
+    	//saverepmap();
     }
     
     //handling serialization of repmap (i.e. streaming repmap contents into a file to avoid data loss on server shutdown/crash)
     
-	public void saverepmap() {
-		
+	public void saverepmap() {  //save all reputation from the repmap to the backup file
 		try {
-			
-			File dataFolder = getDataFolder();
-			if(!dataFolder.exists()) {
-				dataFolder.mkdir();
-			}
-			File saveTo = new File(getDataFolder(), "data.txt");
-			if (!saveTo.exists()){
-				saveTo.createNewFile();
-			}
-			FileWriter fw = new FileWriter(saveTo, true);
+			FileWriter fw = new FileWriter(repfile, false);  //overwrites all contents of the file
 			PrintWriter pw = new PrintWriter(fw);
 			for (String key : repmap.keySet()) {  //iterate through all repmap entries
-				pw.println(key+";"+getmaprep(key));  //write all repmap entries into the 
+				pw.println(key+";"+getmaprep(key));  //write all repmap entries into the file
 			}
 			pw.flush();
 			pw.close();
 		}
 		catch (IOException e) {
 			e.printStackTrace();
+			Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Failed to save data to '"+repfile.getName()+"' at "+dataloc.getAbsolutePath()+" ("+e.getMessage()+")");
 		}
 	}
 	
 	
-	public void asdasd() {
-		
+	public void loadrepmap() {  //load all reputation from the backup file to the repmap
+		repmap.clear();  //empty the repmap
+		try {     
+			List<String> stringList = Files.readLines(repfile, Charset.defaultCharset());  //fetches the contents of the file as string list
+			for (Integer i=0; i < stringList.size(); i++) {  //loop for each entry in stringList
+				String[] parts = stringList.get(i).split(";");  //split line at semicolon, e.g. "test;123" becomes part[0]="test" and part[1]="123" 
+				setmaprep(parts[0], Integer.parseInt(parts[1]));  //parses the rep value in parts[1] as int, creates entry in repmap
+			}
+			//String[] stringArray = stringList.toArray(new String[]{});
+		}
+		catch (FileNotFoundException e) {
+			e.printStackTrace();
+			Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Failed to fetch data from '"+repfile.getName()+"' at "+dataloc.getAbsolutePath()+" ("+e.getMessage()+")");
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+			Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Failed to fetch data from '"+repfile.getName()+"' at "+dataloc.getAbsolutePath()+" ("+e.getMessage()+")");
+		}
 	}
-	
-	/*
-	public void readrepmap() {
-		try
-			{
-				FileInputStream fileIn = new FileInputStream("filedrepmap.ser");
-				ObjectInputStream in = new ObjectInputStream(fileIn);
-				try {
-				repmap = (HashMap) in.readObject();
-			} 
-			catch (ClassNotFoundException e) {
-				Bukkit.getServer().getLogger().log(Level.INFO, "repmap could not be read from file");
-				e.printStackTrace();
-			}
-	         in.close();
-	         fileIn.close();
-	      }
-		catch(IOException i) { 
-			Bukkit.getServer().getLogger().log(Level.INFO, "repmap could not be read from file");
-			i.printStackTrace();
-			return;
-			}
-	    }
-    */
+    
+
     //	maprep changes
     
     public void setmaprep(String player, Integer value) {  //sets a rep value in the hashmap; creates entry if key (player name) doesn't exist yet, replaces otherwise
@@ -123,7 +137,7 @@ public class Reputation extends JavaPlugin {
     
     //	misc
     
-    public boolean ifplayer(String player) {  //checks if player exists on the server
+    public boolean ifplayeronline(String player) {  //checks if player exists on the server
     	boolean ret = false;
     	for (Player ply : Bukkit.getServer().getOnlinePlayers()) {
     		if (ply.getName().equalsIgnoreCase(player)){
@@ -131,6 +145,9 @@ public class Reputation extends JavaPlugin {
     		}
     	}
     	return ret;
+    }
+    public boolean ifplayermapentry(String player) {  //checks if entry for player exists in the repmap
+    	return repmap.containsKey(player);
     }
     
     public Player getplayerobj(String playername) {  //get object Player from player name; returns null if player not found (returned type is Player) 
@@ -142,7 +159,7 @@ public class Reputation extends JavaPlugin {
     	return null;
     }
     
-    public static boolean ifnumber(String input, Boolean hasdecs) {  //if hasdecs = true, number can be a decimal. if hasdecs = false, number can only be integer
+    public static boolean ifnumber(String input, Boolean hasdecs) {  //check if input string is a valid number (hasdecs determines if decimals are allowed)
     	if (hasdecs = true) {
     		return input.matches("[+-]?\\d*(\\.\\d+)?");
     	}
@@ -181,7 +198,7 @@ public class Reputation extends JavaPlugin {
 				sender.sendMessage("use like '/setmaprep [player] [value]'");
 				return true;
 			}
-			if (ifplayer(args[0]) == false) {  //checks if player exists on the server
+			if (ifplayermapentry(args[0]) == false) {  //checks if player exists on the server
 				sender.sendMessage("Player '"+args[0]+"doesn't exist");
 				return true;
 			}
@@ -199,7 +216,7 @@ public class Reputation extends JavaPlugin {
 				sender.sendMessage("use like '/altmaprep [player] [value]'");
 				return true;
 			}
-			if (ifplayer(args[0]) == false) {  //checks if player exists on the server
+			if (ifplayermapentry(args[0]) == false) {  //checks if player exists on the server
 				sender.sendMessage("Player '"+args[0]+"doesn't exist");
 				return true;
 			}
@@ -212,14 +229,15 @@ public class Reputation extends JavaPlugin {
 			return true;
 		}
 		
-		if(cmd.getName().equalsIgnoreCase("savereps")){
+		if(cmd.getName().equalsIgnoreCase("saverepmap")){
 			saverepmap();
-			sender.sendMessage("herpaderp");
+			sender.sendMessage("repmap has been saved to "+dataloc.getAbsolutePath());
 			return true;
 		}
 		
-		if(cmd.getName().equalsIgnoreCase("readreps")){
-			sender.sendMessage(getDataFolder().getAbsolutePath());
+		if(cmd.getName().equalsIgnoreCase("loadrepmap")){
+			loadrepmap();
+			sender.sendMessage("repmap has been cached from "+dataloc.getAbsolutePath());
 			return true;
 		}
     	

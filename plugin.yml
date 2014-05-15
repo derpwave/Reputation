@@ -1,6 +1,6 @@
 name: Reputation
 main: com.gmail.derpwave.Reputation
-version: 0.2
+version: 0.3
 
 
 commands:
@@ -23,14 +23,14 @@ commands:
       permission: altmaprep.rn
       permission-message: You don't have permission to use this command.
       
-   savereps:
+   saverepmap:
       description: save repmap to file  
-      usage: /savereps
-      permission: savereps.rn
+      usage: /saverepmap
+      permission: saverepmap.rn
       permission-message: You don't have permission to use this command.
       
-   readreps:
-      description: read repmap from file  
-      usage: /readreps
-      permission: readreps.rn
+   loadrepmap:
+      description: load repmap from file  
+      usage: /loadrepmap
+      permission: loadrepmap.rn
       permission-message: You don't have permission to use this command.
