@@ -17,6 +17,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -33,7 +34,7 @@ public class Reputation extends JavaPlugin implements Listener {
 	
 	//NOTES
 	
-	// Bukkit.getServer().getLogger().log(Level.INFO, "");  //write something in the server log
+	// logger("");  //write something in the server log
 	
 	//CONSTRUCTORS
 	
@@ -48,32 +49,53 @@ public class Reputation extends JavaPlugin implements Listener {
 	
     public void onEnable(){ 
     	getServer().getPluginManager().registerEvents(this, this);
-    	Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Thanks for creating me. I'll keep an eye on your stuff. Love, Gary.");
+    	logger("Thanks for creating me. I'll keep an eye on your stuff. Love, Gary.");
     	if (!dataloc.exists()) {  //create the plugin's data folder if it doesn't exist (in /plugins, named like plugin)
     		dataloc.mkdir();
-    		Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Plugin data folder doesn't exist; creating... (at "+dataloc.getAbsolutePath()+")");
+    		logger("Plugin data folder doesn't exist; creating... (at "+dataloc.getAbsolutePath()+")");
     		}  
     	else {
-    		Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Plugin data folder found at "+dataloc.getAbsolutePath());
+    		logger("Plugin data folder found at "+dataloc.getAbsolutePath());
     	}
     	if (!repfile.exists()) {  //create the rep backup file if it doesn't exist (in /plugins/pluginname)
     		try {
     			repfile.createNewFile();
-    			Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Player reputation backup file doesn't exist; creating '"+repfile.getName()+"' at "+dataloc.getAbsolutePath());
+    			logger("Player reputation backup file doesn't exist; creating '"+repfile.getName()+"' at "+dataloc.getAbsolutePath());
     			} 
     		catch (IOException e) {
     			e.printStackTrace();
-    			Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Failed to create reputation backup file '"+repfile.getName()+"' at "+dataloc.getAbsolutePath());
+    			logger("Failed to create reputation backup file '"+repfile.getName()+"' at "+dataloc.getAbsolutePath());
     			}
     		}
     	else {  //if rep backup file does exist, load values to repmap
     		loadrepmap();
-    		Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Player reputation backup file '"+repfile.getName()+"' found at "+dataloc.getAbsolutePath()+"; loading");
+    		logger("Player reputation backup file '"+repfile.getName()+"' found at "+dataloc.getAbsolutePath()+"; loading");
+    	}
+    	if (Bukkit.getServer().getOnlinePlayers().length != 0)  //check if any players are online on plugin load (reloading plugins without server reboot does that) 
+    	{
+    		logger("At least one player already online on plugin load; assigning metadata");
+    		Player[] players = Bukkit.getServer().getOnlinePlayers();
+    		for (int i=0; i<players.length; i++) {  //iterate through array of all players online on startup
+    			if (checkmaprep(players[i].getName()) == true) {  //check if player has a reputation set in the repmap to be loaded into metadata
+        			setmetarep(players[i], getmaprep(players[i].getName()));  //load rep values from previously loaded repmap to player metadata
+        			players[i].sendMessage("$aWelcome back, $e"+players[i].getName()+"§a. Your server reputation is §e"+getmetarep(players[i])+"§a. ");
+    			}
+    			else {  
+    	    		setmaprep(players[i].getName(), 0);  //new repmap entry with value 0 for player
+    	    		setmetarep(players[i], 0);  //set metadata rep value to 0
+    	    		players[i].sendMessage("$aIt seems you're new here. Your server reputation is §e0§a.");
+    			}
+
+    		}
+    	}
+    	else {
+    		logger("Zero players online on plugin load");
     	}
     }
      
     public void onDisable(){ 
-    	//saverepmap();
+    	saverepmap();
+    	logger("Disabling Reputation plugin; saving rep values from repmap to "+repfile.getAbsolutePath());
     }
     
     //handling serialization of repmap (i.e. streaming repmap contents into a file to avoid data loss on server shutdown/crash)
@@ -90,7 +112,7 @@ public class Reputation extends JavaPlugin implements Listener {
 		}
 		catch (IOException e) {
 			e.printStackTrace();
-			Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Failed to save data to '"+repfile.getName()+"' at "+dataloc.getAbsolutePath()+" ("+e.getMessage()+")");
+			logger("Failed to save data to '"+repfile.getName()+"' at "+dataloc.getAbsolutePath()+" ("+e.getMessage()+")");
 		}
 	}
 	
@@ -107,16 +129,16 @@ public class Reputation extends JavaPlugin implements Listener {
 		}
 		catch (FileNotFoundException e) {
 			e.printStackTrace();
-			Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Failed to fetch data from '"+repfile.getName()+"' at "+dataloc.getAbsolutePath()+" ("+e.getMessage()+")");
+			logger("Failed to fetch data from '"+repfile.getName()+"' at "+dataloc.getAbsolutePath()+" ("+e.getMessage()+")");
 		}
 		catch (IOException e) {
 			e.printStackTrace();
-			Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Failed to fetch data from '"+repfile.getName()+"' at "+dataloc.getAbsolutePath()+" ("+e.getMessage()+")");
+			logger("Failed to fetch data from '"+repfile.getName()+"' at "+dataloc.getAbsolutePath()+" ("+e.getMessage()+")");
 		}
 	}
     
 
-    //	maprep changes
+    //	maprep functions
     
     public void setmaprep(String player, Integer value) {  //sets a rep value in the hashmap; creates entry if key (player name) doesn't exist yet, replaces otherwise
     	repmap.put(player, value);
@@ -135,7 +157,7 @@ public class Reputation extends JavaPlugin implements Listener {
     }
     
     
-    //	metarep changes
+    //	metarep functions
     
 	public void setmetarep(Player player, Integer value) {
 		player.setMetadata("rep", new FixedMetadataValue(this,value));
@@ -152,7 +174,7 @@ public class Reputation extends JavaPlugin implements Listener {
     	  return null;
     	}
     
-    //	misc
+    //	misc functions
     
     public boolean ifplayeronline(String player) {  //checks if player exists on the server
     	boolean ret = false;
@@ -185,6 +207,10 @@ public class Reputation extends JavaPlugin implements Listener {
     	}
     }
     
+    public void logger(String text) {
+    	Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] "+text);
+    }
+    
     //LISTENER
     
     //	for events
@@ -192,16 +218,21 @@ public class Reputation extends JavaPlugin implements Listener {
     @EventHandler
 	public void onLogin(PlayerJoinEvent event) {
     	if (!checkmaprep(event.getPlayer().getName())) {
-    		Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] No entry found for player in hashmap; creating entry");
+    		logger("No entry found for player in hashmap; creating entry");
     		setmaprep(event.getPlayer().getName(), 0);
     		setmetarep(event.getPlayer(), 0);
-    		event.getPlayer().sendMessage("$aIt seems you're new here. Your server reputation is §e0$a.");
+    		event.getPlayer().sendMessage("$aIt seems you're new here. Your server reputation is §e0§a.");
     	}
     	else {
-    		Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] Player found in hashmap; loading to metadata");
+    		logger("Player found in hashmap; loading to metadata");
     		setmetarep(event.getPlayer(), getmaprep(event.getPlayer().getName()));  //fetch 
-    		event.getPlayer().sendMessage("$aWelcome back. Your server reputation is §e"+getmaprep(event.getPlayer().getName())+"§f. ");
+    		event.getPlayer().sendMessage("$aWelcome back, $e"+event.getPlayer().getName()+"§a. Your server reputation is §e"+getmaprep(event.getPlayer().getName())+"§a. ");
     	}
+    }
+    
+    public void onQuit(PlayerQuitEvent quit) {
+    	setmaprep(quit.getPlayer().getName(), getmetarep(quit.getPlayer()));  //updates the rep value in repmap to the value stored in the player's metadata
+    	logger("Player "+quit.getPlayer().getName()+"quit; saving metadata to repmap");
     }
     //	for commands
     @Override
