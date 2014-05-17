@@ -1,48 +1,29 @@
 name: Reputation
 main: com.gmail.derpwave.Reputation
-version: 0.3
+version: 0.4
 
 
 commands:
-   getmaprep:
-      description: get player reputation from the hashmap  
-      usage: /getmaprep [player]
-      permission: getmaprep.rn
-      permission-message: You don't have permission to use this command.
-      
-      
-   setmaprep:
-      description: set player reputation in the hashmap  
-      usage: /setmaprep [player] [value]
-      permission: setmaprep.rn
-      permission-message: You don't have permission to use this command.
-      
-   altmaprep:
-      description: alter player reputation in the hashmap  
-      usage: /altmaprep [player] [value]
-      permission: altmaprep.rn
-      permission-message: You don't have permission to use this command.
-      
    saverepmap:
       description: save repmap to file  
       usage: /saverepmap
       permission: saverepmap.rn
       permission-message: You don't have permission to use this command.
       
-   loadrepmap:
-      description: load repmap from file  
-      usage: /loadrepmap
-      permission: loadrepmap.rn
-      permission-message: You don't have permission to use this command.
-      
-   getmetarep:
+   getrep:
       description: request player meta reputation  
-      usage: /getmetarep [player]
-      permission: getmetarep.rn
+      usage: /getrep [player]
+      permission: getrep.rn
       permission-message: You don't have permission to use this command.
 
-   setmetarep:
+   setrep:
       description: set player meta reputation
-      usage: /setmetarep [player] [value]
-      permission: setmetarep.rn
+      usage: /setrep [player] [value]
+      permission: setrep.rn
+      permission-message: You don't have permission to use this command.
+      
+   changerep:
+      description: alter player meta reputation
+      usage: /changerep [player] [value]
+      permission: changerep.rn
       permission-message: You don't have permission to use this command.

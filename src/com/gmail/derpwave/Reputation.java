@@ -20,6 +20,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.google.common.io.Files;
@@ -76,14 +77,14 @@ public class Reputation extends JavaPlugin implements Listener {
     		logger("At least one player already online on plugin load; assigning metadata");
     		Player[] players = Bukkit.getServer().getOnlinePlayers();
     		for (int i=0; i<players.length; i++) {  //iterate through array of all players online on startup
-    			if (checkmaprep(players[i].getName()) == true) {  //check if player has a reputation set in the repmap to be loaded into metadata
+    			if (ifmaprep(players[i].getName()) == true) {  //check if player has a reputation set in the repmap to be loaded into metadata
         			setmetarep(players[i], getmaprep(players[i].getName()));  //load rep values from previously loaded repmap to player metadata
-        			players[i].sendMessage("$aWelcome back, $e"+players[i].getName()+"§a. Your server reputation is §e"+getmetarep(players[i])+"§a. ");
+        			players[i].sendMessage("§aWelcome back, §e"+players[i].getName()+"§a. Your server reputation is §e"+getmetarep(players[i])+"§a. ");
     			}
     			else {  
     	    		setmaprep(players[i].getName(), 0);  //new repmap entry with value 0 for player
     	    		setmetarep(players[i], 0);  //set metadata rep value to 0
-    	    		players[i].sendMessage("$aIt seems you're new here. Your server reputation is §e0§a.");
+    	    		players[i].sendMessage("§aIt seems you're new here. Your server reputation is §e0§a.");
     			}
 
     		}
@@ -94,11 +95,16 @@ public class Reputation extends JavaPlugin implements Listener {
     }
      
     public void onDisable(){ 
+    	logger("on disable");
+    	Player[] players = Bukkit.getOnlinePlayers();
+    	for (Player player : players) {  //iterate through all players currently online
+    		setmaprep(player.getName(), getmetarep(player));
+    	}
     	saverepmap();
-    	logger("Disabling Reputation plugin; saving rep values from repmap to "+repfile.getAbsolutePath());
+    	logger("Disabling Reputation plugin; Updating repmap from player metadata; saving repmap to "+repfile.getAbsolutePath());
     }
     
-    //handling serialization of repmap (i.e. streaming repmap contents into a file to avoid data loss on server shutdown/crash)
+    //File IO
     
 	public void saverepmap() {  //save all reputation from the repmap to the backup file
 		try {
@@ -144,18 +150,17 @@ public class Reputation extends JavaPlugin implements Listener {
     	repmap.put(player, value);
     }
     
-    public Integer getmaprep(String player) {  //returns the reputation of a player as int. Don't forget to check if entry exists first with checkmaprep()
+    public Integer getmaprep(String player) {  //returns the reputation of a player as int. Don't forget to check if entry exists first with ifmaprep()
     	return repmap.get(player);
     }
     
     public void altmaprep(String player, Integer value) {  //alters a player's reputation by a given value, which can be negative
     	setmaprep(player, getmaprep(player)+value);
     }
-    
-    public boolean checkmaprep(String player) {  //checks if an entry for a player exists in the hashmap, returns boolean
+
+    public boolean ifmaprep(String player) {  //checks if entry for player exists in the repmap
     	return repmap.containsKey(player);
     }
-    
     
     //	metarep functions
     
@@ -174,6 +179,14 @@ public class Reputation extends JavaPlugin implements Listener {
     	  return null;
     	}
     
+    public void altmetarep(Player player, Integer value) {
+    	setmetarep(player, getmetarep(player)+value);
+    }
+    
+    public boolean ifmetarep(Player player) {  //checks if entry for player exists in the repmap
+    	return !player.getMetadata("rep").isEmpty();
+    }
+    
     //	misc functions
     
     public boolean ifplayeronline(String player) {  //checks if player exists on the server
@@ -184,9 +197,6 @@ public class Reputation extends JavaPlugin implements Listener {
     		}
     	}
     	return ret;
-    }
-    public boolean ifplayermapentry(String player) {  //checks if entry for player exists in the repmap
-    	return repmap.containsKey(player);
     }
     
     public Player getplayerobj(String playername) {  //get object Player from player name; returns null if player not found (returned type is Player) 
@@ -211,78 +221,61 @@ public class Reputation extends JavaPlugin implements Listener {
     	Bukkit.getServer().getLogger().log(Level.INFO, "[Reputation] "+text);
     }
     
+    public Plugin getplugin(String name) {
+    	return Bukkit.getServer().getPluginManager().getPlugin(name);
+    }
+    
     //LISTENER
     
     //	for events
     
     @EventHandler
 	public void onLogin(PlayerJoinEvent event) {
-    	if (!checkmaprep(event.getPlayer().getName())) {
+    	if (!ifmaprep(event.getPlayer().getName())) {
     		logger("No entry found for player in hashmap; creating entry");
     		setmaprep(event.getPlayer().getName(), 0);
     		setmetarep(event.getPlayer(), 0);
-    		event.getPlayer().sendMessage("$aIt seems you're new here. Your server reputation is §e0§a.");
+    		event.getPlayer().sendMessage("§aIt seems you're new here. Your server reputation is §e0§a.");
     	}
     	else {
     		logger("Player found in hashmap; loading to metadata");
     		setmetarep(event.getPlayer(), getmaprep(event.getPlayer().getName()));  //fetch 
-    		event.getPlayer().sendMessage("$aWelcome back, $e"+event.getPlayer().getName()+"§a. Your server reputation is §e"+getmaprep(event.getPlayer().getName())+"§a. ");
+    		event.getPlayer().sendMessage("§aWelcome back, §e"+event.getPlayer().getName()+"§a. Your server reputation is §e"+getmaprep(event.getPlayer().getName())+"§a. ");
     	}
     }
     
+    @EventHandler
     public void onQuit(PlayerQuitEvent quit) {
+    	logger("onQuit");
     	setmaprep(quit.getPlayer().getName(), getmetarep(quit.getPlayer()));  //updates the rep value in repmap to the value stored in the player's metadata
-    	logger("Player "+quit.getPlayer().getName()+"quit; saving metadata to repmap");
+    	logger("Player "+quit.getPlayer().getName()+" quit; saving metadata to repmap");
     }
+    
     //	for commands
+    
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args){
-    	if(cmd.getName().equalsIgnoreCase("getmaprep")){  //command to get a player's reputation from the hashmap
-    		if (args.length != 1) {
-    			sender.sendMessage("$ause like '/getmaprep [player]'");
-    			return true;
-    		}
-    		if (checkmaprep(args[0]) == false){
-    			sender.sendMessage("$aPlayer '$e"+args[0]+"$a' doesn't exist.");
-    			return true;
-    		}
-			sender.sendMessage("$aPlayer$e "+args[0]+"$a has $e"+getmaprep(args[0])+" $areputation.");
-			return true;
+    	
+    	if(cmd.getName().equalsIgnoreCase("saverepmap")){ 
+    		saverepmap();
+    		return true;
     	} 
     	
-		if(cmd.getName().equalsIgnoreCase("setmaprep")){ //command to set a player's reputation in the hashmap
+		if(cmd.getName().equalsIgnoreCase("changerep")){ //command to alter a player's reputation in the hashmap
 			if (args.length != 2) {  //checks if 2 arguments (player, value) have been given
-				sender.sendMessage("$ause like '$e/setmaprep [player] [value]$a'");
+				sender.sendMessage("use like '/changerep [player] [value]'");
 				return true;
 			}
-			if (ifplayermapentry(args[0]) == false) {  //checks if player exists on the server
-				sender.sendMessage("$aPlayer '$e"+args[0]+"$a' doesn't exist");
-				return true;
-			}
-			if (ifnumber(args[1], false) == false){  //checks if 2nd argument (reputation) is a valid int
-				sender.sendMessage("$aReputation needs to be a numeric value");
-				return true;
-			}
-			setmaprep(args[0], Integer.parseInt(args[1]));
-			sender.sendMessage("$e"+args[0]+"'s $areputation has been set to $e"+Integer.parseInt(args[1])+"$a.");
-			return true;
-		}
-    	
-		if(cmd.getName().equalsIgnoreCase("altmaprep")){ //command to alter a player's reputation in the hashmap
-			if (args.length != 2) {  //checks if 2 arguments (player, value) have been given
-				sender.sendMessage("use like '/altmaprep [player] [value]'");
-				return true;
-			}
-			if (ifplayermapentry(args[0]) == false) {  //checks if player exists on the server
-				sender.sendMessage("Player '"+args[0]+"doesn't exist");
+			if (ifmetarep(getplayerobj(args[0])) == false) {  //checks if player exists on the server
+				sender.sendMessage("Player '"+args[0]+" doesn't exist");
 				return true;
 			}
 			if (ifnumber(args[1], false) == false){  //checks if 2nd argument (reputation) is a valid int
 				sender.sendMessage("Reputation needs to be a numeric value");
 				return true;
 			}
-			altmaprep(args[0], Integer.parseInt(args[1]));
-			sender.sendMessage(args[0]+"'s reputation has been changed by "+args[1]+" to "+Integer.parseInt(args[1]));
+			altmetarep(getplayerobj(args[0]), Integer.parseInt(args[1]));
+			sender.sendMessage("§e"+args[0]+"§a's reputation has been changed by §e"+sender.getName()+"§a from §e"+args[1]+"§e to §a"+getmetarep(getplayerobj(args[0])));
 			return true;
 		}
 		
@@ -291,21 +284,36 @@ public class Reputation extends JavaPlugin implements Listener {
 			sender.sendMessage("repmap has been saved to "+dataloc.getAbsolutePath());
 			return true;
 		}
-		
-		if(cmd.getName().equalsIgnoreCase("loadrepmap")){
-			loadrepmap();
-			sender.sendMessage("repmap has been cached from "+dataloc.getAbsolutePath());
-			return true;
-		}
     	
-    	if(cmd.getName().equalsIgnoreCase("setmetarep")){ 
-    		setmetarep(getplayerobj(args[0]), Integer.parseInt(args[1]));
+    	if(cmd.getName().equalsIgnoreCase("setrep")){ 
+			if (args.length != 2) {  //checks if 2 arguments (player, value) have been given
+				sender.sendMessage("§ause like '§e/setrep [player] [value]§a'");
+				return true;
+			}
+			if (ifplayeronline(args[0]) == false) {  //checks if player exists on the server
+				sender.sendMessage("§aPlayer '§e"+args[0]+"§a' doesn't exist");
+				return true;
+			}
+			if (ifnumber(args[1], false) == false){  //checks if 2nd argument (reputation) is a valid int
+				sender.sendMessage("§aReputation needs to be a numeric value");
+				return true;
+			}
+			setmetarep(getplayerobj(args[0]), Integer.parseInt(args[1]));
+			sender.sendMessage("§e"+args[0]+"'s §areputation has been set to §e"+Integer.parseInt(args[1])+"§a.");
     		return true;
     	} 
     	
-    	if(cmd.getName().equalsIgnoreCase("getmetarep")){ 
-    		sender.sendMessage("is "+getmetarep(getplayerobj(args[0])));
-    		return true;
+    	if(cmd.getName().equalsIgnoreCase("getrep")){ 
+    		if (args.length != 1) {
+    			sender.sendMessage("§ause like '/getrep [player]'");
+    			return true;
+    		}
+    		if (ifmaprep(args[0]) == false){
+    			sender.sendMessage("§aPlayer '§e"+args[0]+"§a' doesn't exist.");
+    			return true;
+    		}
+			sender.sendMessage("§aPlayer§e "+args[0]+"§a has §e"+getmetarep(getplayerobj(args[0]))+" §areputation.");
+			return true;
     	} 
     	//template for new commands
     	/* 
